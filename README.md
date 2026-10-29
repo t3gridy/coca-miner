@@ -4,26 +4,39 @@ A local-first vocabulary mining GUI for BNC/COCA-style frequency lists.
 
 ## Files
 
-- `index.html` — the GUI and mining logic.
-- `words.csv` — static source data (25,002 rows). The app does not modify this file.
-- `progress.json` — your decisions, Anki-added flags, column mapping, and settings. This file is created by you and is not committed to the repository.
+- \`index.html\` — the GUI and mining logic.
+- \`words.csv\` — static source data (25,002 rows). The app never modifies this file.
+- \`server.py\` — dependency-free local server and progress API.
+- \`progress.json\` — your decisions, Anki-added flags, column mapping, and settings. It is created locally and ignored by Git.
 
-## Start
+## Recommended: GUI + local server
 
-1. Open the app from a trusted HTTPS origin (for example, a configured GitHub Pages site) to let it fetch `words.csv` automatically. When opening a downloaded `index.html` directly from disk, use **別のCSV** to select `words.csv`; browsers generally block fetching sibling files from a `file://` page.
-2. Press **progress.json を作成 / 接続** and create or select your `progress.json`. In Chrome or Edge on a supported secure origin, decisions and settings are automatically written to this file.
-3. On a later visit, press **progress.json を開く** and select the same file to restore your progress and reconnect auto-save. File handles are not assumed to persist across browser sessions.
-4. Choose a Band range or numeric FREQ range and start mining. Press **J** for known, **F** for unknown, and **Z** to undo.
-5. In the unknown-word list, mark terms as added to Anki. Export the unknown-word list or a progress CSV as needed.
+Python 3.10+ is recommended; no third-party packages are required.
+
+1. Download or clone this repository.
+2. On Windows, double-click \`start.bat\`. On macOS/Linux, run \`sh start.sh\` or \`python3 server.py\` in a terminal.
+3. The browser should open at \`http://127.0.0.1:8765/\`. If it does not, open that address manually.
+4. Mine words as usual. The app creates \`progress.json\` next to \`server.py\` on first launch and automatically saves decisions, Anki flags, column mappings, and settings.
+5. Stop the server with \`Ctrl+C\`. The next launch restores the same progress automatically.
+
+The server binds only to \`127.0.0.1\`, so it is intended for use on the same computer and is not exposed to your network. Writes use an atomic file replacement to reduce the chance of a partially written progress file. Do not delete \`progress.json\` if you want to keep your progress.
+
+## Browser-only alternative
+
+You can still open the GUI from a trusted HTTPS origin, such as a configured GitHub Pages site. Use **progress.json を作成 / 接続** and **progress.json を開く** where the File System Access API is supported. Otherwise, use the JSON import/export controls. A browser-only deployment cannot write directly to a local file without the supported file-access flow.
+
+## Controls
+
+- **F** — mark as known.
+- **J** — mark as unknown.
+- **Z** — undo the last decision.
+
+Known and unknown words already judged are excluded from subsequent mining candidates. Unknown words can be marked as added to Anki and exported as CSV.
 
 ## Data format
 
-`words.csv` has four columns: `Band`, `Headword`, `Related forms`, and `FREQ`. It is treated as read-only by the app.
+\`words.csv\` has four columns: \`Band\`, \`Headword\`, \`Related forms\`, and \`FREQ\`. It is treated as read-only by the app.
 
-`progress.json` contains the known/unknown decisions, Anki flags, settings, and selected column mapping. No progress is written to the GitHub repository. The app does not continuously use localStorage; if an older version's `cocaMiner.v1` data is still present in the same browser, it makes a one-time in-memory migration so you can save that state to `progress.json`.
-
-## Browser compatibility and fallback
-
-The File System Access API is supported in current Chromium-based browsers such as Chrome and Edge when the page is served from a secure context. Where it is unavailable, import/export `progress.json` manually using the JSON controls. Nothing is silently uploaded to GitHub or sent to a server.
+\`progress.json\` stores decisions, Anki flags, settings, and selected column mappings. It is not committed to the repository. The app can make a one-time in-memory migration from an older \`cocaMiner.v1\` localStorage entry so it can be saved to the progress file.
 
 CSV import supports UTF-8/BOM, quoted cells, commas, and newline characters inside quoted fields.
