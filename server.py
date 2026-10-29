@@ -30,7 +30,7 @@ def load_config() -> dict:
     """Load local runtime settings, falling back safely to defaults."""
     if not CONFIG_PATH.exists():
         CONFIG_PATH.write_text(
-            json.dumps(DEFAULT_CONFIG, ensure_ascii=False, indent=2) + "\\n",
+            json.dumps(DEFAULT_CONFIG, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
         config = dict(DEFAULT_CONFIG)
