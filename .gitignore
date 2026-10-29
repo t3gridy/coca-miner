@@ -1,0 +1,5 @@
+# Local vocabulary progress contains personal study history.
+progress.json
+.progress-*.tmp
+__pycache__/
+*.py[cod]
