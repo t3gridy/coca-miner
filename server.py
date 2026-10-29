@@ -17,10 +17,56 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent
-HOST = "127.0.0.1"
-PORT = int(os.environ.get("COCA_MINER_PORT", "8765"))
+CONFIG_PATH = ROOT / "config.json"
+DEFAULT_CONFIG = {
+    "host": "127.0.0.1",
+    "port": 8766,
+    "open_browser": True,
+    "progress_file": "progress.json",
+}
+
+
+def load_config() -> dict:
+    """Load local runtime settings, falling back safely to defaults."""
+    if not CONFIG_PATH.exists():
+        CONFIG_PATH.write_text(
+            json.dumps(DEFAULT_CONFIG, ensure_ascii=False, indent=2) + "\\n",
+            encoding="utf-8",
+        )
+        config = dict(DEFAULT_CONFIG)
+    else:
+        try:
+            config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"Cannot read config.json: {exc}") from exc
+        if not isinstance(config, dict):
+            raise SystemExit("config.json must contain a JSON object")
+        config = {**DEFAULT_CONFIG, **config}
+
+    host = str(config.get("host", DEFAULT_CONFIG["host"]))
+    if host not in {"127.0.0.1", "localhost"}:
+        raise SystemExit('config.json "host" must be "127.0.0.1" or "localhost"')
+    try:
+        port = int(os.environ.get("COCA_MINER_PORT", config["port"]))
+    except (TypeError, ValueError) as exc:
+        raise SystemExit('config.json "port" must be an integer') from exc
+    if not 1 <= port <= 65535:
+        raise SystemExit('config.json "port" must be between 1 and 65535')
+    progress_file = str(config.get("progress_file", DEFAULT_CONFIG["progress_file"]))
+    if not progress_file or Path(progress_file).name != progress_file or progress_file in {".", ".."}:
+        raise SystemExit('config.json "progress_file" must be a filename in the app directory')
+    config["host"] = host
+    config["port"] = port
+    config["open_browser"] = bool(config.get("open_browser", True))
+    config["progress_file"] = progress_file
+    return config
+
+
+CONFIG = load_config()
+HOST = CONFIG["host"]
+PORT = CONFIG["port"]
 MAX_PROGRESS_BYTES = 8 * 1024 * 1024
-PROGRESS_PATH = ROOT / "progress.json"
+PROGRESS_PATH = ROOT / CONFIG["progress_file"]
 STATIC_FILES = {
     "/": ROOT / "index.html",
     "/index.html": ROOT / "index.html",
@@ -189,8 +235,9 @@ def main() -> None:
     url = f"http://127.0.0.1:{PORT}/"
     print(f"COCA Miner is running at {url}")
     print(f"Progress file: {PROGRESS_PATH}")
+    print(f"Settings file: {CONFIG_PATH}")
     print("Only this computer can connect. Press Ctrl+C to stop.")
-    if os.environ.get("COCA_MINER_NO_BROWSER") != "1":
+    if CONFIG["open_browser"] and os.environ.get("COCA_MINER_NO_BROWSER") != "1":
         threading.Timer(0.8, lambda: webbrowser.open(url)).start()
     try:
         server.serve_forever()
