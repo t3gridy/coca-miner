@@ -1,19 +1,29 @@
 # COCA Miner
 
-Offline, single-file vocabulary mining tool for BNC/COCA-style frequency CSVs.
+A local-first vocabulary mining GUI for BNC/COCA-style frequency lists.
 
-## Use
-1. Download `index.html` and open it in a modern browser (Chrome/Edge recommended).
-2. Load the frequency-list CSV.
-3. Check the column mapping under **設定・CSV列** (Band, FREQ, Headword, Related forms).
-4. Choose a band range or numeric FREQ range, select random or FREQ-descending order, then start mining.
-5. Press **J** for known, **F** for unknown, **Z** to undo. Classified words are excluded from future mining.
-6. Mark unknown words as added to Anki in the unknown-word list. Export that list separately when useful.
-7. Use **CSVへ保存 / 上書き** to save a copy of the source CSV with `MinerStatus` and `AnkiAdded` columns. On browsers supporting the File System Access API, choose the original file in the save dialog to overwrite it. Otherwise a new CSV is downloaded and must be moved over the original manually.
+## Files
 
-## Notes
-- Runs locally in the browser. No server or external library is used.
-- Progress and settings are stored in this browser's localStorage. Export CSV regularly as a backup.
-- The browser cannot silently overwrite a local file; saving over the original requires user confirmation.
-- CSV import supports UTF-8 (including BOM), quoted cells, commas, and newlines in quoted cells.
-- The tool reads frequency bands and FREQ values from selected columns; it does not infer frequency from word spelling.
+- `index.html` — the GUI and mining logic.
+- `words.csv` — static source data (25,002 rows). The app does not modify this file.
+- `progress.json` — your decisions, Anki-added flags, column mapping, and settings. This file is created by you and is not committed to the repository.
+
+## Start
+
+1. Open the app from a trusted HTTPS origin (for example, a configured GitHub Pages site) to let it fetch `words.csv` automatically. When opening a downloaded `index.html` directly from disk, use **別のCSV** to select `words.csv`; browsers generally block fetching sibling files from a `file://` page.
+2. Press **progress.json を作成 / 接続** and create or select your `progress.json`. In Chrome or Edge on a supported secure origin, decisions and settings are automatically written to this file.
+3. On a later visit, press **progress.json を開く** and select the same file to restore your progress and reconnect auto-save. File handles are not assumed to persist across browser sessions.
+4. Choose a Band range or numeric FREQ range and start mining. Press **J** for known, **F** for unknown, and **Z** to undo.
+5. In the unknown-word list, mark terms as added to Anki. Export the unknown-word list or a progress CSV as needed.
+
+## Data format
+
+`words.csv` has four columns: `Band`, `Headword`, `Related forms`, and `FREQ`. It is treated as read-only by the app.
+
+`progress.json` contains the known/unknown decisions, Anki flags, settings, and selected column mapping. No progress is written to the GitHub repository. The app does not continuously use localStorage; if an older version's `cocaMiner.v1` data is still present in the same browser, it makes a one-time in-memory migration so you can save that state to `progress.json`.
+
+## Browser compatibility and fallback
+
+The File System Access API is supported in current Chromium-based browsers such as Chrome and Edge when the page is served from a secure context. Where it is unavailable, import/export `progress.json` manually using the JSON controls. Nothing is silently uploaded to GitHub or sent to a server.
+
+CSV import supports UTF-8/BOM, quoted cells, commas, and newline characters inside quoted fields.
